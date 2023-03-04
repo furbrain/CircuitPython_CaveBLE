@@ -22,7 +22,9 @@ Introduction
     :target: https://github.com/psf/black
     :alt: Code Style: Black
 
-DistoX Bluetooth Protocol
+DistoX Bluetooth Protocol - mimic the DistoX protocol for communicating with
+paperless cave surveying tools e.g. `TopoDroid <https://github.com/marcocorvi/topodroid>`_ and
+`SexyTopo<https://github.com/richsmith/sexytopo>`_
 
 
 Dependencies
