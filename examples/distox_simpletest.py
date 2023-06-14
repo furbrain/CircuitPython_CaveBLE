@@ -16,13 +16,14 @@ import keypad
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
 import distox
+
 ble = BLERadio()
 ble.name = "DistoX"
 print(ble.name)
 disto = distox.DistoXService()
-advertisement = ProvideServicesAdvertisement(disto)
+disto_protocol = distox.SurveyProtocolService()
+advertisement = ProvideServicesAdvertisement(disto, disto_protocol)
 ble.start_advertising(advertisement)
-
 
 
 KEY_PINS = (board.D5, board.D9)
@@ -51,5 +52,3 @@ while True:
     if message:
         print(f"Message received: {message}")
     time.sleep(0.03)
-
-
