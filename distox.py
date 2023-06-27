@@ -6,8 +6,8 @@
 `distox`
 ================================================================================
 
-DistoX Bluetooth Protocol - mimic the DistoX protocol for communicating between
-paperless cave surveying tools e.g. `TopoDroid <https://github.com/marcocorvi/topodroid>`_
+Cave Surveying Bluetooth Protocol - communicate via BLE with paperless cave surveying tools
+e.g. `TopoDroid <https://github.com/marcocorvi/topodroid>`_
 
 
 * Author(s): Phil Underwood
@@ -26,68 +26,58 @@ __repo__ = "https://github.com/furbrain/CircuitPython_distox.git"
 
 import time
 from collections import deque
-from struct import pack_into
 
 from adafruit_ble import Service
+from adafruit_ble.attributes import Attribute
+from adafruit_ble.characteristics import StructCharacteristic, Characteristic
+from adafruit_ble.characteristics.int import Uint8Characteristic
 from adafruit_ble.characteristics.string import FixedStringCharacteristic
-from adafruit_ble.services.nordic import UARTService
-
 from adafruit_ble.uuid import VendorUUID
 
 try:
-    from typing import Deque, Callable, Optional, Awaitable
+    from typing import Deque, Callable, Optional, Coroutine, Tuple
 except ImportError:
     pass
 
 
 class SurveyProtocolService(Service):
-    # pylint: disable=too-few-public-methods
     """
-    This service acts as a marker so cave surveying software can identify
-    this as a cave surveying device, regardless of its name
+    This service provide a BLE style interface to access data from the device
     """
 
+    ACK = [0x56, 0x55]
+    START_CAL = 0x31
+    STOP_CAL = 0x30
+    LASER_ON = 0x36
+    LASER_OFF = 0x37
+    DEVICE_OFF = 0x34
+    TAKE_SHOT = 0x38
+
     uuid = VendorUUID("137c4435-8a64-4bcb-93f1-3792c6bdc965")
-    protocol_characteristic = FixedStringCharacteristic(
+    protocol_name = FixedStringCharacteristic(
         uuid=VendorUUID("137c4435-8a64-4bcb-93f1-3792c6bdc966"),
+    )
+    command = Uint8Characteristic(
+        uuid=VendorUUID("137c4435-8a64-4bcb-93f1-3792c6bdc967"),
+        properties=Characteristic.WRITE,
+        read_perm=Attribute.NO_ACCESS,
+    )
+    leg = StructCharacteristic(
+        struct_format="<Bffff",
+        uuid=VendorUUID("137c4435-8a64-4bcb-93f1-3792c6bdc968"),
+        properties=Characteristic.READ | Characteristic.NOTIFY,
+        write_perm=Attribute.NO_ACCESS,
     )
 
     def __init__(self):
-        super().__init__(protocol_characteristic="SAP6")
-
-
-class DistoXService(UARTService):
-    """
-    Send data to cave surveying apps such as SexyTopo.
-
-    **NOTE** you will need to either regularly call ``poll`` or run ``background_task``
-    in the background using
-    `asyncio <https://docs.circuitpython.org/projects/asyncio/en/latest/index.html>`_
-
-    """
-
-    ACK = 0x55
-    START_CAL = 0x31
-    STOP_CAL = 0x30
-    START_SILENT = 0x33
-    STOP_SILENT = 0x32
-    READ_MEM = 0x38
-    WRITE_MEM = 0x39
-
-    def __init__(self):
-        super().__init__()
+        super().__init__(protocol_name="SAP6")
         self.last_send_time: float = 0
         # pylint: disable=too-many-function-args
-        self.send_queue: Deque[bytes] = deque((), 20, 1)
+        self.send_queue: Deque[Tuple[float, float, float, float]] = deque((), 20, 1)
         self.sent_packet: bytes = b""
-        self.last_enqueued_sequence = 0
-        self.last_sent_sequence = 0
+        self.last_sent_bit = 0
         self.waiting_for_ack: bool = False
         self.incomplete_packets: bytes = b""
-
-    @staticmethod
-    def _get_sequence_bit(msg: bytes):
-        return (msg[0] & 0x80) == 0x80
 
     def send_data(self, azimuth, inclination, distance, roll=0):
         """
@@ -97,21 +87,41 @@ class DistoXService(UARTService):
         :param float inclination: Inclination in degrees
         :param float distance: Distance in metres
         """
-        packet = bytearray(8)
-        # get scaled integer versions of each parameter
-        i_distance = int(distance * 1000.0)
-        long_bit = 1 if i_distance > 0xFFFF else 0
-        i_distance %= 0x10000
-        i_clino = int(inclination * 32768.0 / 180.0)
-        i_compass = int(azimuth * 32768.0 / 180.0)
-        i_roll = int((roll % 360) * 128.0 / 180)
-        first_byte = self.last_enqueued_sequence << 7 | long_bit << 6 | 0x01
-        pack_into(
-            "<BHHhB", packet, 0, first_byte, i_distance, i_compass, i_clino, i_roll
-        )
-        self.last_enqueued_sequence ^= 0x01  # toggle
-        self.send_queue.append(packet)
+        self.send_queue.append((azimuth, inclination, roll, distance))
         self._poll_out()
+
+    def _poll_out(self):
+        if self.waiting_for_ack:
+            # resend if last packet sent more than 5s ago
+            if time.monotonic() - self.last_send_time > 5.0:
+                self.leg = self.leg  # resend notify with unchanged data
+                self.last_send_time = time.monotonic()
+        else:
+            if self.send_queue:
+                azimuth, inclination, roll, distance = self.send_queue.popleft()
+                self.leg = (self.last_sent_bit, azimuth, inclination, roll, distance)
+                self.last_sent_bit ^= 1
+                self.last_send_time = time.monotonic()
+                self.waiting_for_ack = True
+
+    def _poll_in(self):
+        cmd = self.command
+        if cmd != 0:
+            print(f"got cmd: {cmd}")
+            # process command
+            self.command = 0
+            expected_ack = self.ACK[self.last_sent_bit]
+            unexpected_ack = self.ACK[self.last_sent_bit ^ 1]
+            if cmd == expected_ack:
+                print("ACK received")
+                self.waiting_for_ack = False
+                return None
+            elif cmd == unexpected_ack:
+                print("Wrong ack received: expecting ", expected_ack)
+                return None
+            else:
+                return cmd
+        return None
 
     def poll(self) -> Optional[int]:
         """
@@ -127,101 +137,8 @@ class DistoXService(UARTService):
         self._poll_out()
         return result
 
-    def _poll_out(self):
-        if self.waiting_for_ack:
-            # resend if last packet sent more than 5s ago
-            if time.monotonic() - self.last_send_time > 5.0:
-                self.write(self.sent_packet)
-                self.last_send_time = time.monotonic()
-        else:
-            if self.send_queue:
-                self.sent_packet = self.send_queue.popleft()
-                self.last_sent_sequence = self._get_sequence_bit(self.sent_packet)
-                self.write(self.sent_packet)
-                self.waiting_for_ack = True
-                self.last_send_time = time.monotonic()
-
-    def poll_in(self) -> Optional[int]:
-        """
-        Check for new messages and return that info...
-
-        :return: Any message received or None
-        """
-
-        if self.in_waiting:
-            packet = self.read(self.in_waiting)
-            return self._process_message_in(packet)
-        if self.incomplete_packets:
-            return self._process_message_in(b"")
-        return None
-
-    def _process_ack(self, sequence):
-        if sequence == self.last_sent_sequence:
-            self.waiting_for_ack = False
-
-    def _process_message_in(self, packet: bytes) -> Optional[int]:
-        """
-        Read a message that has come in and process it
-        :return: List of messages
-        """
-        packet = self.incomplete_packets + packet
-        if packet[0] & 0x7F == self.ACK:
-            sequence = self._get_sequence_bit(packet)
-            self._process_ack(sequence)
-            self.incomplete_packets = packet[1:]
-            return None
-        if packet[0] in [
-            self.START_CAL,
-            self.STOP_CAL,
-            self.START_SILENT,
-            self.STOP_SILENT,
-        ]:
-            self.incomplete_packets = packet[1:]
-            return packet[0]
-        if packet[0] == self.READ_MEM:
-            if len(packet) >= 3:  # we have a full frame
-                # no action taken as not supported
-                self.incomplete_packets = packet[3:]
-            else:
-                self.incomplete_packets = packet
-            return None
-        if packet[0] == self.WRITE_MEM:
-            if len(packet) >= 7:  # we have a full frame
-                # no action taken as not supported
-                self.incomplete_packets = packet[3:]
-            else:
-                self.incomplete_packets = packet
-            return None
-        # unrecognised start byte: discard
-        self.incomplete_packets = packet[1:]
-        return None
-
-    async def _input_task(self, callback: Optional[Callable[[int], Awaitable]] = None):
-        # pylint: disable=import-outside-toplevel
-        """
-        Monitor for packets in and call cb with each packet found
-        :return:
-        """
-        import asyncio
-
-        callback_tasks = set()
-        stream = asyncio.StreamReader(self._rx)
-        try:
-            while True:
-                data: bytes = await stream.readexactly(1)
-                message = self._process_message_in(data)
-                if callback:
-                    task = asyncio.create_task(callback(message))
-                    callback_tasks.add(task)
-                    callback_tasks = {
-                        x for x in callback_tasks if not x.done
-                    }  # discard completed tasks
-        finally:
-            for x in callback_tasks:
-                x.cancel()
-
     async def background_task(
-        self, callback: Optional[Callable[[int], Awaitable]] = None
+        self, callback: Optional[Callable[[int], Coroutine]] = None
     ):
         # pylint: disable=import-outside-toplevel
         """
@@ -234,10 +151,17 @@ class DistoXService(UARTService):
         """
         import asyncio
 
-        input_task = asyncio.create_task(self._input_task(callback))
+        cb_tasks = []
         try:
             while True:
                 await asyncio.sleep(0.1)
+                cmd = self._poll_in()
+                if cmd is not None and callback is not None:
+                    res = callback(cmd)
+                    if hasattr(res, "__await__"):
+                        cb_tasks.append(asyncio.create_task(res))
                 self._poll_out()
+                cb_tasks = [x for x in cb_tasks if not x.done]
         finally:
-            input_task.cancel()
+            for task in cb_tasks:
+                task.cancel()
