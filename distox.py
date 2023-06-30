@@ -90,6 +90,16 @@ class SurveyProtocolService(Service):
         self.send_queue.append((azimuth, inclination, roll, distance))
         self._poll_out()
 
+    def pending(self) -> int:
+        """
+        How many readings are waiting to be sent
+        :return: Number of readings queued
+        """
+        if self.waiting_for_ack:
+            return len(self.send_queue) + 1
+        else:
+            return len(self.send_queue)
+
     def _poll_out(self):
         if self.waiting_for_ack:
             # resend if last packet sent more than 5s ago
