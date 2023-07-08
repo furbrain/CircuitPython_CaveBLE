@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 """
-`distox`
+`caveble`
 ================================================================================
 
 Cave Surveying Bluetooth Protocol - communicate via BLE with paperless cave surveying tools
@@ -22,7 +22,7 @@ Implementation Notes
 
 """
 __version__ = "0.0.0+auto.0"
-__repo__ = "https://github.com/furbrain/CircuitPython_distox.git"
+__repo__ = "https://github.com/furbrain/CircuitPython_CaveBLE.git"
 
 import time
 from collections import deque

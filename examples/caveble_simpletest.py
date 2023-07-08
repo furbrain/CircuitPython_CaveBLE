@@ -15,14 +15,13 @@ import board
 import keypad
 from adafruit_ble import BLERadio
 from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
-import distox
+import caveble
 
 ble = BLERadio()
-ble.name = "DistoX"
+ble.name = "SAP6_AB"
 print(ble.name)
-disto = distox.DistoXService()
-disto_protocol = distox.SurveyProtocolService()
-advertisement = ProvideServicesAdvertisement(disto, disto_protocol)
+survey_protocol = caveble.SurveyProtocolService()
+advertisement = ProvideServicesAdvertisement(survey_protocol)
 ble.start_advertising(advertisement)
 
 
@@ -46,9 +45,9 @@ while True:
                 distance = (distance + 3.4) % 10000
                 print(compass, clino, distance)
             if key_number == 1:
-                disto.send_data(compass, clino, distance)
+                survey_protocol.send_data(compass, clino, distance)
                 print("Data sent")
-    message = disto.poll()
+    message = survey_protocol.poll()
     if message:
         print(f"Message received: {message}")
     time.sleep(0.03)

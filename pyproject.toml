@@ -11,25 +11,25 @@ requires = [
 ]
 
 [project]
-name = "circuitpython-distox"
-description = "DistoX Bluetooth Protocol"
+name = "circuitpython-caveble"
+description = "Cave Surveying Bluetooth Protocol"
 version = "0.0.0+auto.0"
 readme = "README.rst"
 authors = [
-    {name = "Adafruit Industries", email = "circuitpython@adafruit.com"}
+    {name = "Phil Underwood", email = "beardydoc@gmail.com"}
 ]
-urls = {Homepage = "https://github.com/furbrain/CircuitPython_distox"}
+urls = {Homepage = "https://github.com/furbrain/CircuitPython_CaveBLE"}
 keywords = [
     "adafruit",
     "blinka",
     "circuitpython",
     "micropython",
-    "distox",
     "disto",
     "distox",
     "bluetooth",
     "cave",
     "survey",
+    "caveble",
 ]
 license = {text = "MIT"}
 classifiers = [
@@ -45,7 +45,7 @@ dynamic = ["dependencies", "optional-dependencies"]
 [tool.setuptools]
 # TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
 #       CHANGE `py_modules = ['...']` TO `packages = ['...']`
-py-modules = ["distox"]
+py-modules = ["caveble"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

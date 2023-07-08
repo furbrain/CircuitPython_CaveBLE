@@ -2,13 +2,13 @@ Introduction
 ============
 
 
-.. image:: https://readthedocs.org/projects/circuitpython-distox/badge/?version=latest
-    :target: https://circuitpython-distox.readthedocs.io/
+.. image:: https://readthedocs.org/projects/circuitpython-caveble/badge/?version=latest
+    :target: https://circuitpython-caveble.readthedocs.io/
     :alt: Documentation Status
 
 
-.. image:: https://github.com/furbrain/CircuitPython_distox/workflows/Build%20CI/badge.svg
-    :target: https://github.com/furbrain/CircuitPython_distox/actions
+.. image:: https://github.com/furbrain/CircuitPython_CaveBLE/workflows/Build%20CI/badge.svg
+    :target: https://github.com/furbrain/CircuitPython_CaveBLE/actions
     :alt: Build Status
 
 
@@ -16,7 +16,7 @@ Introduction
     :target: https://github.com/psf/black
     :alt: Code Style: Black
 
-DistoX Bluetooth Protocol - mimic the DistoX protocol for communicating with
+Cave Surveying Bluetooth Protocol - a protocol for communicating with
 paperless cave surveying tools e.g. `TopoDroid <https://github.com/marcocorvi/topodroid>`_ and
 `SexyTopo <https://github.com/richsmith/sexytopo>`_
 
@@ -39,18 +39,18 @@ Installing from PyPI
 ====================
 
 On supported GNU/Linux systems like the Raspberry Pi, you can install the driver locally `from
-PyPI <https://pypi.org/project/circuitpython-distox/>`_.
+PyPI <https://pypi.org/project/circuitpython-caveble/>`_.
 To install for current user:
 
 .. code-block:: shell
 
-    pip3 install circuitpython-distox
+    pip3 install circuitpython-caveble
 
 To install system-wide (this may be required in some cases):
 
 .. code-block:: shell
 
-    sudo pip3 install circuitpython-distox
+    sudo pip3 install circuitpython-caveble
 
 To install in a virtual environment in your current project:
 
@@ -59,7 +59,7 @@ To install in a virtual environment in your current project:
     mkdir project-name && cd project-name
     python3 -m venv .venv
     source .env/bin/activate
-    pip3 install circuitpython-distox
+    pip3 install circuitpython-caveble
 
 Installing to a Connected CircuitPython Device with Circup
 ==========================================================
@@ -76,7 +76,7 @@ following command to install:
 
 .. code-block:: shell
 
-    circup install distox
+    circup install caveble
 
 Or the following command to update an existing version:
 
@@ -95,14 +95,13 @@ Usage Example
     import keypad
     from adafruit_ble import BLERadio
     from adafruit_ble.advertising.standard import ProvideServicesAdvertisement
-    import distox
+    import caveble
 
     ble = BLERadio()
-    ble.name = "DistoX"
+    ble.name = "SAP6_AB"
     print(ble.name)
-    disto = distox.DistoXService()
-    disto_protocol = distox.SurveyProtocolService()
-    advertisement = ProvideServicesAdvertisement(disto, disto_protocol)
+    survey_protocol = caveble.SurveyProtocolService()
+    advertisement = ProvideServicesAdvertisement(survey_protocol)
     ble.start_advertising(advertisement)
 
 
@@ -126,16 +125,16 @@ Usage Example
                     distance = (distance + 3.4) % 10000
                     print(compass, clino, distance)
                 if key_number == 1:
-                    disto.send_data(compass, clino, distance)
+                    survey_protocol.send_data(compass, clino, distance)
                     print("Data sent")
-        message = disto.poll()
+        message = survey_protocol.poll()
         if message:
             print(f"Message received: {message}")
         time.sleep(0.03)
 
 Documentation
 =============
-API documentation for this library can be found on `Read the Docs <https://circuitpython-distox.readthedocs.io/>`_.
+API documentation for this library can be found on `Read the Docs <https://circuitpython-caveble.readthedocs.io/>`_.
 
 For information on building library documentation, please check out
 `this guide <https://learn.adafruit.com/creating-and-sharing-a-circuitpython-library/sharing-our-docs-on-readthedocs#sphinx-5-1>`_.
@@ -144,5 +143,5 @@ Contributing
 ============
 
 Contributions are welcome! Please read our `Code of Conduct
-<https://github.com/furbrain/CircuitPython_distox/blob/HEAD/CODE_OF_CONDUCT.md>`_
+<https://github.com/furbrain/CircuitPython_CaveBLE/blob/HEAD/CODE_OF_CONDUCT.md>`_
 before contributing to help this project stay welcoming.

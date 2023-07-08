@@ -7,6 +7,7 @@
 import os
 import sys
 import datetime
+import adafruit_ble
 
 sys.path.insert(0, os.path.abspath(".."))
 
@@ -25,7 +26,7 @@ extensions = [
 # Uncomment the below if you use native CircuitPython modules such as
 # digitalio, micropython and busio. List the modules you use. Without it, the
 # autodoc module docs will fail to generate with a warning.
-autodoc_mock_imports = ["_bleio", "adafruit_ble"]
+autodoc_mock_imports = ["_bleio"]
 
 
 intersphinx_mapping = {
@@ -45,7 +46,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "CircuitPython distox Library"
+project = "CircuitPython CaveBLE Library"
 creation_year = "2023"
 current_year = str(datetime.datetime.now().year)
 year_duration = (
@@ -134,7 +135,7 @@ html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "CircuitPython_Distox_Librarydoc"
+htmlhelp_basename = "CircuitPython_CaveBLE_Librarydoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -155,8 +156,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "CircuitPython_distox_Library.tex",
-        "CircuitPython distox Library Documentation",
+        "CircuitPython_caveble_Library.tex",
+        "CircuitPython caveble Library Documentation",
         author,
         "manual",
     ),
@@ -169,8 +170,8 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        "CircuitPython_distox_Library",
-        "CircuitPython distox Library Documentation",
+        "CircuitPython_caveble_Library",
+        "CircuitPython caveble Library Documentation",
         [author],
         1,
     ),
@@ -184,10 +185,10 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        "CircuitPython_distox_Library",
-        "CircuitPython distox Library Documentation",
+        "CircuitPython_caveble_Library",
+        "CircuitPython caveble Library Documentation",
         author,
-        "CircuitPython_distox_Library",
+        "CircuitPython_caveble_Library",
         "One line description of project.",
         "Miscellaneous",
     ),
