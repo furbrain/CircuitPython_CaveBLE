@@ -46,12 +46,14 @@ class SurveyProtocolService(Service):
     """
 
     ACK = [0x56, 0x55]
-    START_CAL = 0x31
-    STOP_CAL = 0x30
-    LASER_ON = 0x36
-    LASER_OFF = 0x37
-    DEVICE_OFF = 0x34
-    TAKE_SHOT = 0x38
+    ACK0 = 0x55  #: Acknowledge a leg with sequence bit 0
+    ACK1 = 0x56  #: Acknowledge a leg with sequence bit 1
+    START_CAL = 0x31  #: Start Calibration
+    STOP_CAL = 0x30  #: Finish calibration
+    LASER_ON = 0x36  #: Turn laser on
+    LASER_OFF = 0x37  #: Turn laser off
+    DEVICE_OFF = 0x34  #: Turn device off
+    TAKE_SHOT = 0x38  #: Take a reading
 
     uuid = VendorUUID("137c4435-8a64-4bcb-93f1-3792c6bdc965")
     protocol_name = FixedStringCharacteristic(
@@ -93,6 +95,7 @@ class SurveyProtocolService(Service):
     def pending(self) -> int:
         """
         How many readings are waiting to be sent
+
         :return: Number of readings queued
         """
         if self.waiting_for_ack:
@@ -138,10 +141,10 @@ class SurveyProtocolService(Service):
         Check to see if any messages need sending or re-sending. This should be called
         every 100ms or so. It will send any data due to be sent and will resend data if no
         acknowledgement has been received. It will also return any messages received
-        (one of ``START_CAL``, ``STOP_CAL``, ``START_SILENT``, ``STOP_SILENT``). Note the memory
+        (one of ``START_CAL``, ``STOP_CAL``, ``START_SILENT``, ``STOP_SILENT`` etc). Note the memory
         access commands are currently unsupported and will be ignored.
 
-        :return: None
+        :return: None (if no command received) or an int of one of the above constants
         """
         result = self.poll_in()
         self._poll_out()
@@ -156,7 +159,8 @@ class SurveyProtocolService(Service):
         will check for new messages and if there are any outstanding outgoing messages
         every 100ms or so.
 
-        :param Callable callback: Function to call with any messages received
+        :param Callable callback: Async function to call with any messages received, function
+          must take one argument, which will be an integer matching one of the above constants
         :return: None
         """
         import asyncio
