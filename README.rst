@@ -157,6 +157,7 @@ Sample Java code
 
     import android.bluetooth.BluetoothDevice;
     import android.content.Context;
+    import xxx.xxx.xxx.CaveBLE;
 
     import kotlin.Unit;
 
@@ -272,8 +273,8 @@ Or the following command to update an existing version:
 
     circup update
 
-Usage Example
-=============
+Full Usage Example
+==================
 
 .. code-block:: python
 
