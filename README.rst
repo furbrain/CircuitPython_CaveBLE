@@ -18,7 +18,7 @@ Introduction
 Cave Surveying Bluetooth Protocol - a protocol for communicating with
 paperless cave surveying tools e.g. `TopoDroid <https://github.com/marcocorvi/topodroid>`_ and
 `SexyTopo <https://github.com/richsmith/sexytopo>`_. This protocol was developed for use with
-the `Shetland Attack Pony 6 <https://shetlandattackpony.co.uk/>`_, but is presented free to use
+the `Shetland Attack Pony 6 <https://www.shetlandattackpony.co.uk/>`_, but is presented free to use
 for anyone who wishes to use it for their cave surveying device.
 
 Protocol
